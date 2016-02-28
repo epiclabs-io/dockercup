@@ -1,0 +1,21 @@
+{
+    "default": {
+        "ftpHostname": "ftp.hostname.com",
+        "ftpUsername": "username",
+        "ftpPassword": "password",
+        "ftpRemoteFolder": "/vmbackup",
+        "numBackups": 4,
+        "frequency": 7,
+        "stop": true
+    },
+    "backup": [
+        {
+            "name": "container1",
+            "stop": true,
+            "volumes": {
+                "numBackups": 7,
+                "frequency": 1
+            }
+        }
+    ]
+}
