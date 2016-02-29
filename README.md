@@ -10,6 +10,8 @@ Backups in the FTP space are rotated so that space consumed for backups does not
 
 ## How to install
 
+If you just want to use DockerCup, there is an image published in DockerHub ready to use. However, you must prepare your host system following these steps:
+
 1. Copy `dockercup.sh` to `/usr/local/bin` and make it executable `chmod +x /usr/local/bin/dockercup.sh`
 2. Create your global `/etc/dockercup.conf.json` starting off the included `dockercup.conf.json.sample` file.
 3. For each Docker container you want its volumes to be to backed up, add an entry to the `backup` array in the configuration file
@@ -18,6 +20,7 @@ Backups in the FTP space are rotated so that space consumed for backups does not
 ```
 0 4 * * * /usr/local/bin/dockercup.sh
 ```
+
 Although the script runs every day, it will check each container's schedule to see if it has to actually execute the backup that day or not.
 
 Trick: You can override gobal variables in each containers's backup configuration file, for example to back up a specific machine to a different FTP host.
