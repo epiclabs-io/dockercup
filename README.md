@@ -35,21 +35,21 @@ Trick: You can override gobal variables in each containers's backup configuratio
         "frequency": 7, /* in days, how often to execute the backup */
         "stop": true /* if the container must be stopped to back its volumes up */
     },
+    "logFolder" : "/var/log/dockercup" /* Where to put logs */
     "backup": [ /* array of per-container configurations */
         {
             "name": "container1", /* name of the container to back up */
             "stop": true,
-            "volumes": {
-                "numBackups": 7,
-                "frequency": 1
-            }
+            "numBackups": 7, /* how many backups to keep in the FTP server */
+            "frequency": 1 /* in days, how often to execute the backup */
         }
     ]
-}```
+}
+```
 
 ### Logging
 
-The script automatically saves rotating logs to the logging folder specified in the configuration file, by default `/var/log/dockerbackup/`
+The script automatically saves rotating logs to the logging folder specified in the configuration file, by default `/var/log/dockercup/`
 
 ## License
 
