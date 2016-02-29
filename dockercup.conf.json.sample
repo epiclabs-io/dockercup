@@ -1,4 +1,5 @@
 {
+	"logFolder:"/var/log/dockercup",
     "default": {
         "ftpHostname": "ftp.hostname.com",
         "ftpUsername": "username",
@@ -8,14 +9,13 @@
         "frequency": 7,
         "stop": true
     },
+	"logFolder" : "/var/log/dockercup",
     "backup": [
         {
             "name": "container1",
             "stop": true,
-            "volumes": {
-                "numBackups": 7,
-                "frequency": 1
-            }
+            "numBackups": 7,
+            "frequency": 1
         }
     ]
 }

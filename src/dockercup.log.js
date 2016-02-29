@@ -1,13 +1,17 @@
 var moment = require("moment");
+var fs = require("fs");
 
 var log =
 	{
+		logFile: null,
 		logger: function (st) {
 
 			console.log(st);
+			if(this.logFile)
+                fs.appendFileSync(this.logFile,st + "\n");
 
 		},
-		mod: "DOCKERCUP",
+		mod: "*",
 		write: function (level, st) {
 			this.logger(moment().format("YYYY-MM-DD HH:mm:ss") + " " + level + " " + this.mod + " :" + st);
 		},

@@ -18,6 +18,7 @@ var shell = require("shelljs");
 var fs = require("fs");
 var moment = require("moment");
 var log = require("./dockercup.log.js");
+log.mod = "DOCKERCUP";
 
 var config;
 var status;
@@ -53,6 +54,17 @@ function exec(cmd) {
 
 function backupContainer(backupConfig) {
 
+    log.mod = "DOCKERCUP/" + backupConfig.name;
+    
+    //Initialize effective config out of the defaults
+    var cfg = (JSON.parse(JSON.stringify(config.default)));
+
+    // Use the specific config to override defaults and add
+    // other keys
+    Object.keys(backupConfig).forEach(function (key) {
+        cfg[key] = backupConfig[key];
+    }, this);
+
     var now = moment();
     if (!backupConfig.status)
         backupConfig.status = { lastBackup: 0, seq: 0 };
@@ -60,7 +72,7 @@ function backupContainer(backupConfig) {
     if (backupConfig.status.lastBackup) {
         var diff = now.diff(moment(backupConfig.status.lastBackup).subtract(1, "hours"), "days");
 
-        if (diff < backupConfig.volumes.frequency) {
+        if (diff < backupConfig.frequency) {
             log.warn("Not the time to back up " + backupConfig.name + " yet. Skipping...");
             return;
         }
@@ -68,17 +80,8 @@ function backupContainer(backupConfig) {
 
     }
 
-    backupConfig.status.lastBackup = now;
-
-    var cfg = (JSON.parse(JSON.stringify(config.default)));
-
-    Object.keys(backupConfig).forEach(function (key) {
-        cfg[key] = backupConfig[key];
-
-    }, this);
-
-
-    var backupFolder = BACKUP_FOLDER + "/" + cfg.name + "-" + backupConfig.status.seq;
+    var backupFolderName = cfg.name + "-" + backupConfig.status.seq;
+    var backupFolder = BACKUP_FOLDER + "/" + backupFolderName;
     var tarFile = backupFolder + "/" + cfg.name + ".tar";
     var zipFile = tarFile + ".7z";
 
@@ -97,6 +100,7 @@ function backupContainer(backupConfig) {
         return;
     }
 
+    backupConfig.status.lastBackup = now;
     backupConfig.status.seq = (backupConfig.status.seq + 1) % cfg.numBackups;
 
     log.info(cfg.name + " has the following volumes:")
@@ -126,12 +130,12 @@ function backupContainer(backupConfig) {
             log.info(cfg.name + " stopped. DockerCup will restart it after tarring up its volumes.");
         }
         catch (e) {
-            log.err("Error attempting to stop " + cfg.name + ". Error:" + JSON.stringify(e));
-            log.err(cfg.name + " backup aborted.");
+            log.error("Error attempting to stop " + cfg.name + ". Error:" + JSON.stringify(e));
+            log.error(cfg.name + " backup aborted.");
             return;
         }
     }
-    
+
     log.info("Tarring " + cfg.name + "'s volumes...");
 
     shell.pushd("/tmp");
@@ -140,8 +144,8 @@ function backupContainer(backupConfig) {
         log.info(cfg.name + "'s volumes tarred up.");
     }
     catch (e) {
-        log.err("Error executing tar backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + tarcmd);
-        log.err(cfg.name + " backup aborted.");
+        log.error("Error executing tar backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + tarcmd);
+        log.error(cfg.name + " backup aborted.");
         return;
     }
 
@@ -153,7 +157,7 @@ function backupContainer(backupConfig) {
             log.info(cfg.name + " restarted successfully.");
         }
         catch (e) {
-            log.err("Error attempting to restart " + cfg.name + ". Error:" + JSON.stringify(e));
+            log.error("Error attempting to restart " + cfg.name + ". Error:" + JSON.stringify(e));
         }
     }
 
@@ -165,8 +169,8 @@ function backupContainer(backupConfig) {
         exec(zipCmd)
     }
     catch (e) {
-        log.err("Error executing 7z backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + zipCmd);
-        log.err(cfg.name + " backup aborted.");
+        log.error("Error executing 7z backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + zipCmd);
+        log.error(cfg.name + " backup aborted.");
         return;
     }
 
@@ -175,14 +179,14 @@ function backupContainer(backupConfig) {
 
     log.info("Uploading " + cfg.name + " backup to " + cfg.ftpHostname + "...");
     var ftpCommand = 'lftp -c "open -u ' + cfg.ftpUsername + ',' + cfg.ftpPassword + ' ' + cfg.ftpHostname +
-        ';mirror -R --verbose --delete-first --delete ' + backupFolder + '/ ' + cfg.ftpRemoteFolder + '"';
+        ';mirror -R --verbose --delete-first --delete ' + backupFolder + '/ ' + cfg.ftpRemoteFolder + '/' + backupFolderName + '"';
 
     try {
         exec(ftpCommand);
     }
     catch (e) {
-        log.err("Error uploading files to FTP backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + ftpCommand);
-        log.err(cfg.name + " backup aborted.");
+        log.error("Error uploading files to FTP backing up " + cfg.name + ". Error:" + JSON.stringify(e) + ". command line: " + ftpCommand);
+        log.error(cfg.name + " backup aborted.");
         return;
     }
 
@@ -191,7 +195,7 @@ function backupContainer(backupConfig) {
         fs.writeFileSync(argv.config, JSON.stringify(config, null, 4));
     }
     catch (e) {
-        log.err("Error writing status/configuration to " + argv.config + " after successfully backing up " + cfg.name + ".");
+        log.error("Error writing status/configuration to " + argv.config + " after successfully backing up " + cfg.name + ".");
     }
 }
 
@@ -202,22 +206,41 @@ function main() {
     parseCommandLine();
     argv = yargs.argv;
 
-    log.info("DockerCup v1.0 Copyright(c) 2016 Epic Labs");
-    log.info("Using config file " + argv.config);
-
     try {
         config = JSON.parse(fs.readFileSync(argv.config, 'utf8'));
     }
     catch (e) {
-        log.err("Error reading " + argv.config + ". Backup process aborted.");
+        log.error("Error reading " + argv.config + ". Backup process aborted.");
         return;
 
     }
+
+    if (!config.logFolder)
+        config.logFolder = "/var/log/dockercup"
+
+    var logFolder = "/host" + config.logFolder;
+    // create log folder if it does not exist
+    try {
+        fs.accessSync(logFolder, fs.F_OK);
+    } catch (e) {
+        shell.mkdir("-p", logFolder);
+
+    }
+
+    //weekly log rotation.
+    log.logFile = logFolder + "/log-" + moment().day() + ".txt";
+    try {
+        fs.unlinkSync(log.logFile); //delete log file
+    } catch (e) { }
+
+    log.info("DockerCup v1.0 Copyright(c) 2016 Epic Labs");
+    log.info("Using config file " + argv.config);
 
     shell.rm("-rf", BACKUP_FOLDER);
     shell.mkdir("-p", BACKUP_FOLDER);
 
     config.backup.forEach(backupContainer);
+    log.mod = "DOCKERCUP";
 
     log.info("Done!");
 
