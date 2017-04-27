@@ -5,6 +5,7 @@
         "ftpUsername": "username",
         "ftpPassword": "password",
         "ftpRemoteFolder": "/vmbackup",
+		"ftpInitString" : "set ssl:verify-certificate false",
         "numBackups": 4,
         "frequency": 7,
         "stop": true

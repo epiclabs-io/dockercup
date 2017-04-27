@@ -178,7 +178,9 @@ function backupContainer(backupConfig) {
     shell.rm(tarFile);
 
     log.info("Uploading " + cfg.name + " backup to " + cfg.ftpHostname + "...");
-    var ftpCommand = 'lftp -c "open -u ' + cfg.ftpUsername + ',' + cfg.ftpPassword + ' ' + cfg.ftpHostname +
+	
+	var ftpInitString = cfg.ftpInitString || "";
+    var ftpCommand = 'lftp -c "'+ ftpInitString +';open -u ' + cfg.ftpUsername + ',' + cfg.ftpPassword + ' ' + cfg.ftpHostname +
         ';mirror -R --verbose --delete-first --delete ' + backupFolder + '/ ' + cfg.ftpRemoteFolder + '/' + backupFolderName + '"';
 
     try {

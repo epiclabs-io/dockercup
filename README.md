@@ -34,6 +34,7 @@ Trick: You can override gobal variables in each containers's backup configuratio
         "ftpUsername": "username",
         "ftpPassword": "password",
         "ftpRemoteFolder": "/vmbackup",
+		"ftpInitString" : "", /* extra lftp initialization commands before FTP connection is opened. See lftp man page for options here */
         "numBackups": 4, /* how many backups to keep in the FTP server */
         "frequency": 7, /* in days, how often to execute the backup */
         "stop": true /* if the container must be stopped to back its volumes up */
